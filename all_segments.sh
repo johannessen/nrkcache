@@ -6,21 +6,29 @@
 
 base="$1"
 count="$2"
+type="$3"
+
+if [ ! "$type" ]
+then
+	type=4
+fi
+
 
 nameprefix=segment
-namesuffix=_4_av.ts
+namesuffix="_${type}_av.ts"
 
 
 if [ ! "$base" ]
 then
 	echo "need base"
-	exit
+	exit 1
 fi
 if [ ! "$count" ]
 then
 	echo "need count"
-	exit
+	exit 1
 fi
+seq 1 "$count" > /dev/null || exit
 
 # load all segments if none are present
 # -> no, don't; type (18) errors can't be caught
@@ -52,7 +60,9 @@ do
 		if [ ! -e "$f" ]
 		then
 			complete=
-			echo "$f"
+			echo -n "$f                         "
+			date
+			
 			curl -O "$base/$f"
 			
 			curlexit=$?
@@ -63,6 +73,14 @@ do
 			then
 				echo "cURL exit code: $curlexit; stopping"
 				exit $curlexit
+			fi
+			
+			grep -iq '<html>' "$f" 2> /dev/null
+			if [ $? -eq 0 ]
+			then
+				echo "received HTML response instead of MPEG transport stream; stopping"
+				mv "$f" "$f.html"
+				exit 1
 			fi
 		fi
 	done
@@ -86,3 +104,7 @@ rm all_segments.ts
 # curl: (18) transfer closed with 2475808 bytes remaining to read
 
 # ^ [ 0-9][0-9]
+
+# http://tv.nrk.no/innstillinger
+# http://tv.nrk.no/programsubtitles/FBUA09000084
+# http://subtitleconverter.net/

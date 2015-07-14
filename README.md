@@ -1,5 +1,5 @@
-About all_segments.sh
-=====================
+About nrkcache
+==============
 
 The [sizeable](https://nrkbeta.no/2015/03/02/50-000-tv-program-nar-du-vil/)
 Video-on-Demand offerings of the [Norwegian Broadcasting Corporation](https://www.nrk.no/)
@@ -14,12 +14,14 @@ from the internet uninterrupted at *any* quality setting.
 This script aims to prevent modern incarnations of “film tear” by creating
 just such a local cache of [HTTP Live Streaming](https://en.wikipedia.org/wiki/HTTP_Live_Streaming)
 segments, then combining them into a single MPEG-4 container supported by many
-modern video players.
+modern video players. It is specially designed for the NRK Video-on-Demand
+offering and will not work with other HLS sources without modification.
 
 
 System Requirements
 -------------------
 
+- Perl
 - Bash
 - cURL
 - FFmpeg
