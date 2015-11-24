@@ -54,21 +54,34 @@ complete=
 while [ ! $complete ]
 do
 	complete=yes
+	hosterror=
 	for i in `seq 1 $count`
 	do
 		f="$nameprefix$i$namesuffix"
-		if [ ! -e "$f" ]
+		if [[ ! -e "$f" || ! -s "$f" ]]
 		then
 			complete=
 			echo -n "$f                         "
 			date
 			
+			touch "$f"  # assist the "delete-on-ctrl-C" logic by nrkcache.pl
 			curl -O "$base/$f"
 			
 			curlexit=$?
 			if [ $curlexit -eq 18 ]
 			then
+				# Partial file.
 				rm "$f"
+			elif [ $curlexit -eq 7 ]
+			then
+				# Failed to connect to host.
+				if [ $hosterror ]
+				then
+					# repeated
+					echo "cURL exit code: $curlexit; stopping"
+					exit $curlexit
+				fi
+				hosterror=yes
 			elif [ $curlexit -gt 0 ]
 			then
 				echo "cURL exit code: $curlexit; stopping"

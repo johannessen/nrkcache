@@ -21,9 +21,10 @@ offering and will not work with other HLS sources without modification.
 System Requirements
 -------------------
 
-- Perl
+- Perl 5.14+
 - Bash
 - cURL
+- libxslt (`xsltproc`)
 - FFmpeg
 
 
