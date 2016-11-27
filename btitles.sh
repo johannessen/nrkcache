@@ -3,14 +3,21 @@
 #set -x
 
 key="$1"
+url="$2"
 if [ ! "$key" ]
 then
 	echo "need key"
 	exit
 fi
+if [ ! "$url" ]
+then
+	url="https://tv.nrk.no/programsubtitles/$key"
+fi
 
-xml="$key.xml"
-srt="$key.xml.srt"
+key=`echo "$key" | sed -e 's|^/programsubtitles/||'`
+
+xml="$key.ttml"
+srt="$key.srt"
 
 if [ -e "$srt" ]
 then
@@ -24,7 +31,7 @@ then
 	echo "$xml exists; skipping download"
 
 else
-	curl -o "$xml" "https://tv.nrk.no/programsubtitles/$key"
+	curl -o "$xml" "$url"
 	curlexit=$?
 fi
 
@@ -35,6 +42,11 @@ then
 fi
 
 tr "\r\t\n" " " < "$xml" | sed -e 's/  */ /g' | xsltproc "`dirname \"$0\"`/w3ctt2srt.xsl" - > "$srt"
+
+#if [ "$2" ]
+#then
+#	ln "$srt" "all_segments.srt"
+#fi
 
 wc -l "$srt"
 

@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.02;
+our $VERSION = 1.05;
 
 use scriptname;
 use File::DirList;
@@ -25,6 +25,7 @@ my %options = (
 	quality => -1,
 	verbose => 99,
 	any => undef,
+	index_base => undef,
 );
 GetOptions(
 	'verbose|v+' => \$verbose,
@@ -33,6 +34,7 @@ GetOptions(
 	'quality|q=i' => \$options{quality},
 	'any|a' => \$options{any},
 	'info-only|I' => \$options{infoonly},
+	'base|b=s' => \$options{index_base},
 ) or pod2usage(2);
 pod2usage(-exitstatus => 0, -verbose => 2) if $options{man};
 
@@ -111,11 +113,15 @@ print STDERR "Download URL: $nrkurl\n" if $nrkurl && $options{verbose};
 
 
 
-my $base;
+my @hls_cookie_params = ("-b", "NRK_PLAYER_SETTINGS_RADIO=preferred-player-odm=hlslink,NRK_PLAYER_SETTINGS_TV=preferred-player-odm=hlslink");
+@hls_cookie_params = ("-b", "NRK_PLAYER_SETTINGS_TV=preferred-player-odm=hlslink") unless $options{any};  # not sure why this is necessary; check curl docs
+
+my $base = $options{index_base};
 my $count = '';
 my $type;
 my $suffix;
 my $query;
+my $programid;
 
 my $thisdir = `pwd`;
 chomp $thisdir;
@@ -127,6 +133,7 @@ if ( -e 'all_segments.mp4' ) {
 }
 
 
+my $nrkinfo = {};
 if ($nrkurl) {
 	# get all info from programme web page
 	print STDERR "Downloading NRK page...\n" if $options{verbose};
@@ -134,9 +141,8 @@ if ($nrkurl) {
 	if ( $nrkurl =~ m|/([A-Z]{4}[0-9]{8})/|i ) {
 		$pagefile = "$1.html";
 	}
-	system "curl", "-o", $pagefile, "$nrkurl" unless -f $pagefile;
+	system "curl", @hls_cookie_params, "-o", $pagefile, "$nrkurl" unless -f $pagefile;
 	
-	my $nrkinfo = {};
 	my $Seriebeskrivelse = 0;
 	my $nrkinfo_ignore = {
 		'apple-mobile-web-app-title' => 1,
@@ -182,6 +188,9 @@ if ($nrkurl) {
 		if ( m|data-subtitlesurl\s*=\s*"([^"]+)"|i ) {
 			$nrkinfo->{playerdata_subtitlesurl} = $1;
 		}
+		if ( m|="([^"]+)"\s*id="playListLink"|i ) {
+			$nrkinfo->{playlisturl} = $1;
+		}
 		
 		if ( $Seriebeskrivelse && m|<p>([^<]+)</p>|i ) {
 			$nrkinfo->{html_Seriebeskrivelse} = $1;
@@ -194,17 +203,44 @@ if ($nrkurl) {
 			$nrkinfo->{has_review} = 1;
 		}
 		
+		if ( ! $nrkinfo->{mediaelementApiTemplate} && m|\sapiBaseUrl\s*:\s*"([^"]+)"\s*,|i ) {
+			$nrkinfo->{mediaelementApiTemplate} = "${1}mediaelement/{id}?inSuperUniverse=False&callback=?";
+		}
+		if ( m|\smediaelementApiTemplate\s*:\s*"([^"]+)"\s*,|i ) {
+			$nrkinfo->{mediaelementApiTemplate} = $1;
+		}
+		
 	}
 	close NRKPAGE;
 	
-	#print Data::Dumper::Dumper($nrkinfo);
+	$programid = $nrkinfo->{programid};
+	if ($nrkinfo->{mediaelementApiTemplate} && ( ! $nrkinfo->{playerdata_hls_media} || ! $nrkinfo->{playerdata_subtitlesurl} )) {
+		my $mediaelementApiTemplate = $nrkinfo->{mediaelementApiTemplate};
+		$mediaelementApiTemplate =~ s/{id}/$nrkinfo->{programid}/;
+		my $mediaelementfile = "$nrkinfo->{programid}.json";
+		system "curl", @hls_cookie_params, "-o", $mediaelementfile, "$mediaelementApiTemplate";
+		local *NRKMEDIA;
+		open NRKMEDIA, '<', $mediaelementfile or die $!;
+		while (<NRKMEDIA>) {
+			chomp;
+			if ( ! $nrkinfo->{playerdata_hls_media} && m|"mediaUrl"\s*:\s*"(http[^"]+/)master.m3u8(\?[^"]+)?"|i ) {
+				$nrkinfo->{playerdata_hls_media} = "${1}master.m3u8";
+				$nrkinfo->{playerdata_hls_media} .= $2 if $2;
+				$base = "$1";
+			}
+			if ( ! $nrkinfo->{playerdata_subtitlesurl} && m|"subtitlesUrlPath"\s*:\s*"(http[^"]+)"|i ) {
+				$nrkinfo->{playerdata_subtitlesurl} = "$1";
+			}
+			if ( ! $nrkinfo->{'og:description'} && m|"description"\s*:\s*"([^"]+)"|i ) {
+				$nrkinfo->{'og:description'} = "$1";
+				$nrkinfo->{'og:description'} =~ s/\\r\\n|\\r|\\n/\n/;
+			}
+		}
+		close NRKMEDIA;
+	}
 	
 	my ($key, $value);
-# 	while (($key, $value) = each %$nrkinfo) {
-# 		print "$key=$value\n";
-# 	}
-	
-	open(my $FH, '>', 'report.txt') or die "Could not open file 'filename' $!";
+	open(my $FH, '>', 'report.txt') or die "Could not open file 'report.txt' $!";
 	if ($nrkinfo->{'og:description'}) {
 		print $FH $nrkinfo->{'og:description'}, "\n\n";
 	}
@@ -226,27 +262,42 @@ if ($nrkurl) {
 	}
 	close $FH;
 	
-	
-	if ( ! $options{infoonly} ) {
-		if ($nrkinfo->{playerdata_subtitlesurl}) {
-			print STDERR "Downloading Subtitles...\n" if $options{verbose};
-			system scriptname::mydir() . "/btitles.sh", $nrkinfo->{playerdata_subtitlesurl};
-		}
-		else {
-			print STDERR "Subtitles not available.\n" if $options{verbose};
-		}
-		
-		if ($nrkinfo->{playerdata_hls_media}) {
-			print STDERR "Downloading Master File...\n" if $options{verbose};
-			system "curl", "-o", $MASTER_NAME, $nrkinfo->{playerdata_hls_media};
-		}
-		else {
-			print STDERR "Master File URL not found on NRK page.\n" if $options{verbose};
-		}
-		
-	}
-	
 }
+
+if ($nrkinfo->{programid} && $nrkinfo->{'og:url'}) {
+	open(my $FH, '>', "$nrkinfo->{programid}.webloc") or die "Could not open file '$nrkinfo->{programid}.webloc' $!";
+	print $FH <<"END";
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>URL</key>
+	<string>$nrkinfo->{'og:url'}</string>
+</dict>
+</plist>
+END
+	close $FH;
+}
+
+if ( $options{any} && $nrkinfo->{playlisturl} ) {
+	print STDERR "Downloading Playlist...\n" if $options{verbose};
+	my $playlisturl = "https://radio.nrk.no/" . $nrkinfo->{playlisturl};
+	print STDERR "$playlisturl\n" if $options{verbose};
+	system "curl", "-o", 'playlist.html', $playlisturl;
+}
+elsif ( $options{any} ) {
+	print STDERR "Playlist not available.\n" if $options{verbose};
+}
+
+if ($nrkinfo->{playerdata_subtitlesurl}) {
+	print STDERR "Downloading Subtitles...\n" if $options{verbose};
+	system scriptname::mydir() . "/btitles.sh", $nrkinfo->{programid}, $nrkinfo->{playerdata_subtitlesurl};
+}
+else {
+	print STDERR "Subtitles not available.\n" if $options{verbose};
+}
+
+
 
 
 
@@ -254,9 +305,13 @@ if ( $options{infoonly} ) {
 	exit 0;
 }
 
-
-
-
+if ($nrkinfo->{playerdata_hls_media}) {
+	print STDERR "Downloading Master File...\n" if $options{verbose};
+	system "curl", "-o", $MASTER_NAME, $nrkinfo->{playerdata_hls_media};
+}
+else {
+	print STDERR "Master File URL not found on NRK page.\n" if $options{verbose};
+}
 
 
 
@@ -270,18 +325,19 @@ open MASTER, '<', $MASTER_NAME or die $!;
 while (<MASTER>) {
 	chomp;
 	
-	my $regex = '^(https?://.+)/index_(\d)_av\.([^\s\?]+)(\?\S*)?';
+	my $regex = '^(https?://.+/)?index_(\d)_av\.([^\s\?]+)(\?\S*)?';
 	if ($options{any}) {
-		$regex = '^(https?://.+)/index_(\d)([^\s\?]+)(\?\S*)?';
+		$regex = '^(https?://.+/)?index_(\d)([^\s\?]+)(\?\S*)?';
 	}
 	m|$regex| or next;
 	
-	$1 && defined $2 && $3 or next;
+	$1 || $base or next;
+	defined $2 && $3 or next;
 	if ( $type && $2 < $type ) {
 		next;
 	}
 	
-	$base = $1;
+	$base ||= $1;
 	$type = $2;
 	$suffix = $3;
 	$query = $4;
@@ -312,7 +368,7 @@ print STDERR "Base: $base (suffix: $suffix, query: $query)\n";
 
 
 
-system "curl", "-o", $indexfile, "$base/$indexfile$query" unless -r $indexfile;
+system "curl", "-o", $indexfile, "$base$indexfile$query" unless -r $indexfile;
 
 
 
@@ -327,11 +383,12 @@ open FILE, '<', $indexfile or die $!;
 while (<FILE>) {
 	chomp;
 	
-	my $regex = '^(https?://.+)/segment(\d+)_(\d_[av]+)\.ts';
+	my $regex = '^(https?://.+/)?segment(\d+)_(\d_[av]+)\.ts(\?\S*)?';
 	m|$regex| or next;
-	$base = $1;
+	$base ||= $1;
 	$count = $2;
 	$type = $3;
+	$suffix = $4;
 	
 }
 close FILE;
@@ -379,8 +436,11 @@ elsif ($exitcode == 1) {
 	print "Exiting.\n";
 }
 elsif ($exitcode == 0) {
+	link "$programid.srt", "all_segments.srt" if $programid && -e "$programid.srt";
+#	link "all_segments.mp4", "$programid.mp4" if $programid;
 	if ($options{any} && $type =~ m/_a$/) {
 		rename "all_segments.mp4", "all_segments.m4a";
+#		rename "$programid.mp4", "$programid.m4a" if $programid;
 	}
 }
 
@@ -397,13 +457,14 @@ __END__
 
 =head1 NAME
 
-nrkcache.pl
+nrkcache.pl - Cache NRK Video on Demand broadcasts for offline viewing.
 
 =head1 SYNOPSIS
 
  nrkcache.pl [-vv] [dir] [url]
  nrkcache.pl [-vv] master.m3u8
  nrkcache.pl [-vv] dir/
+ nrkcache.pl [-vv] -b http://example.org/media/
  nrkcache.pl --help|--version|--man
 
 =head1 DESCRIPTION
@@ -439,6 +500,10 @@ highest numerical value available is chosen.
 =item B<--any, -a>
 
 Set this option to enable audio-only and video-only download. Not well tested.
+
+=item B<--base, -b>
+
+If an existing master file is to be used, this option may be used to supply a base for relative URLs. Not well tested.
 
 =item B<--verbose, -v>
 

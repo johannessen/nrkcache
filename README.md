@@ -41,7 +41,8 @@ Legal Considerations
 Use of this script would appear to be legal in Germany, falling under both of
 the caching exceptions laid down in [§ 44a UrhG](http://www.gesetze-im-internet.de/urhg/__44a.html).
 The Norwegian [Åndsverkloven § 11a](https://lovdata.no/dokument/NL/lov/1961-05-12-2/KAPITTEL_2-2#%C2%A711a)
-seems to contain the same exceptions.
+seems to contain the same exceptions – not surprising, since both laws are
+[implementations of the InfoSoc Directive (2001/29/EC)](http://copyrightexceptions.eu/).
 Use would apparently also be legal in the U.S. under the “fair use” doctrine.
 
 That said, any use of this script is *your* responsibility. In particular, you

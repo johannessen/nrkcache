@@ -10,12 +10,12 @@ type="$3"
 
 if [ ! "$type" ]
 then
-	type=4
+	type=4_av
 fi
 
 
 nameprefix=segment
-namesuffix="_${type}_av.ts"
+namesuffix="_${type}.ts"
 
 
 if [ ! "$base" ]
@@ -30,9 +30,8 @@ then
 fi
 seq 1 "$count" > /dev/null || exit
 
-# load all segments if none are present
-# -> no, don't; type (18) errors can't be caught
-
+#    load all segments if none are present
+#    -> no, don't; type (18) errors can't be caught
 # empty=yes
 # for i in `seq 1 $count`
 # do
@@ -49,7 +48,6 @@ seq 1 "$count" > /dev/null || exit
 # fi
 
 
-# make sure it's complete
 complete=
 while [ ! $complete ]
 do
@@ -100,10 +98,11 @@ do
 done
 
 
-
+# segment: 7 chars
 ls "$nameprefix"* | cut -c 8-99 | sort -n > list
 rm -f all_segments.ts
-while read f ; do cat "segment$f" >> all_segments.ts ; done < list
+#nameprefix=segment
+while read f ; do perl -e 'exit $ARGV[0] =~ m/\.html$/;' "$f" && cat "$nameprefix$f" >> all_segments.ts || echo "list: $f skipped." ; done < list
 
 #ffmpeg -i all_segments.ts -vcodec copy -acodec copy -bsf:a aac_adtstoasc -scodec copy all_segments.mp4
 ffmpeg -i all_segments.ts -vcodec copy -acodec copy -bsf:a aac_adtstoasc all_segments.mp4
