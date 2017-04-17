@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.05;
+our $VERSION = 1.06;
 
 use scriptname;
 use File::DirList;
@@ -169,6 +169,9 @@ if ($nrkurl) {
 		if ( m{<meta\s+(?:name|property)="([^"]+)"\s+content="([^"]+)"}i ) {
 			$nrkinfo->{$1} = $2 unless $nrkinfo_ignore->{$1};
 		}
+		if ( m{^\s*programId: "([^"]+)",?$}i ) {
+			$nrkinfo->{programid} = $1;
+		}
 		
 		if ( m|data-media\s*=\s*"(http[^"]+)"|i ) {
 			$nrkinfo->{playerdata_media} = $1;
@@ -214,6 +217,7 @@ if ($nrkurl) {
 	close NRKPAGE;
 	
 	$programid = $nrkinfo->{programid};
+#	say "--- $programid";
 	if ($nrkinfo->{mediaelementApiTemplate} && ( ! $nrkinfo->{playerdata_hls_media} || ! $nrkinfo->{playerdata_subtitlesurl} )) {
 		my $mediaelementApiTemplate = $nrkinfo->{mediaelementApiTemplate};
 		$mediaelementApiTemplate =~ s/{id}/$nrkinfo->{programid}/;
