@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.06;
+our $VERSION = 1.07;
 
 use scriptname;
 use File::DirList;
@@ -23,9 +23,11 @@ my %options = (
 	man => undef,
 	master_name => 'master.m3u8',
 	quality => -1,
-	verbose => 99,
+	verbose => 1,
 	any => undef,
 	index_base => undef,
+	dir => 0,
+	comment => undef,  # ignored!
 );
 GetOptions(
 	'verbose|v+' => \$verbose,
@@ -35,6 +37,8 @@ GetOptions(
 	'any|a' => \$options{any},
 	'info-only|I' => \$options{infoonly},
 	'base|b=s' => \$options{index_base},
+	'mkdir|d' => \$options{dir},
+	'comment|c=s' => \$options{comment},
 ) or pod2usage(2);
 pod2usage(-exitstatus => 0, -verbose => 2) if $options{man};
 
@@ -68,23 +72,23 @@ elsif (1 == scalar @ARGV) {
 		# example: dir1/master.m3u8
 		$masterfile = $ARGV[0];
 		$targetdir = dirname $masterfile;
-		print STDERR "case 1a\n" if $options{verbose};
+		print STDERR "case 1a\n" if $options{verbose} >= 2;
 	}
 	elsif ( -d $ARGV[0] && -f $masterfile ) {
 		# example: dir1
 		$targetdir = $ARGV[0];
-		print STDERR "case 1b\n" if $options{verbose};
+		print STDERR "case 1b\n" if $options{verbose} >= 2;
 	}
 	elsif ( -d $targetdir && -f "$targetdir/$MASTER_NAME" ) {
 		# example: dir1/someotherfile - this doesn't seem very useful actually
 		$masterfile = "$targetdir/$MASTER_NAME";
-		print STDERR "case 1c\n" if $options{verbose};
+		print STDERR "case 1c\n" if $options{verbose} >= 2;
 	}
 	elsif ( $ARGV[0] =~ m/^https?:/ ) {
 		$targetdir = '.';
 		$nrkurl = $ARGV[0];
 		$masterfile = $MASTER_NAME;
-		print STDERR "case 1d\n" if $options{verbose};
+		print STDERR "case 1d\n" if $options{verbose} >= 2;
 	}
 	else {
 		pod2usage(-exitstatus => 3, -verbose => 0, -message => 'Could not parse master file, target dir or download URL from argument.');
@@ -93,7 +97,12 @@ elsif (1 == scalar @ARGV) {
 elsif (2 == scalar @ARGV) {
 	$targetdir = $ARGV[0];
 	if ( ! -d $targetdir ) {
-		pod2usage(-exitstatus => 3, -verbose => 0, -message => 'Could not parse target dir from first argument.');
+		if ($options{dir}) {
+			`mkdir -p "$targetdir"`;
+		}
+		else {
+			pod2usage(-exitstatus => 3, -verbose => 0, -message => 'Could not parse target dir from first argument.');
+		}
 	}
 	$masterfile = "$targetdir/$MASTER_NAME";
 	if ( $ARGV[1] =~ m/^https?:/ ) {
