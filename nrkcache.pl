@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.07;
+our $VERSION = 1.08;
 
 use scriptname;
 use File::DirList;
@@ -25,6 +25,7 @@ my %options = (
 	quality => -1,
 	verbose => 1,
 	any => undef,
+	part => undef,
 	index_base => undef,
 	dir => 0,
 	comment => undef,  # ignored!
@@ -35,6 +36,7 @@ GetOptions(
 	'masterfile-name=s' => \$options{master_name},
 	'quality|q=i' => \$options{quality},
 	'any|a' => \$options{any},
+	'part|p=i' => \$options{part},
 	'info-only|I' => \$options{infoonly},
 	'base|b=s' => \$options{index_base},
 	'mkdir|d' => \$options{dir},
@@ -237,6 +239,17 @@ if ($nrkurl) {
 		while (<NRKMEDIA>) {
 			chomp;
 			if ( ! $nrkinfo->{playerdata_hls_media} && m|"mediaUrl"\s*:\s*"(http[^"]+/)master.m3u8(\?[^"]+)?"|i ) {
+				$nrkinfo->{playerdata_hls_media} = "${1}master.m3u8";
+				$nrkinfo->{playerdata_hls_media} .= $2 if $2;
+				$base = "$1";
+			}
+			if ( $options{part} && m|"mediaAssets"\s*:\s*\[\s*\{([^\]]*)\}\s*\]|i ) {
+				$options{part} = 0 + $options{part};
+				print STDERR "Looking for part $options{part}\n" if $options{verbose};
+				my @parts = split m/}\s*,\s*{/, $1;
+				die "Content has " . scalar(@parts) . " parts" if $options{part} > @parts || $options{part} < 1;
+				$parts[$options{part} - 1] =~ m|"url"\s*:\s*"(http[^"]+/)master.m3u8(\?[^"]+)?"|i;
+				die "Failed to parse media URL of part $options{part}" unless $1;
 				$nrkinfo->{playerdata_hls_media} = "${1}master.m3u8";
 				$nrkinfo->{playerdata_hls_media} .= $2 if $2;
 				$base = "$1";
@@ -449,7 +462,7 @@ elsif ($exitcode == 1) {
 	print "Exiting.\n";
 }
 elsif ($exitcode == 0) {
-	link "$programid.srt", "all_segments.srt" if $programid && -e "$programid.srt";
+	link "$programid.srt", "all_segments.NO.srt" if $programid && -e "$programid.srt";
 #	link "all_segments.mp4", "$programid.mp4" if $programid;
 	if ($options{any} && $type =~ m/_a$/) {
 		rename "all_segments.mp4", "all_segments.m4a";
@@ -512,11 +525,15 @@ highest numerical value available is chosen.
 
 =item B<--any, -a>
 
-Set this option to enable audio-only and video-only download. Not well tested.
+Set this option to enable audio-only (and video-only) download.
+
+=item B<--part, -p>
+
+Set this option to try to retrieve a numbered part of a content. Not well tested.
 
 =item B<--base, -b>
 
-If an existing master file is to be used, this option may be used to supply a base for relative URLs. Not well tested.
+If an existing master file is to be used, this option may be used to supply a base for relative URLs. This must be the CDN URL, not the NRK URL! Not well tested.
 
 =item B<--verbose, -v>
 
