@@ -4,7 +4,10 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.08;
+our $VERSION = 1.09;
+
+# TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
+# TODO: There should be an -n flag to control the niceness on cURL (e.g. --limit-rate 800k; with -nn yielding 400k, which may approximately be real-time q4; -nnn 200k/s)
 
 use scriptname;
 use File::DirList;
@@ -430,22 +433,45 @@ print STDERR "Type: $type, Base: $base\n";
 
 
 
+sub handle_user_cancelled {
+	sleep 3;  # test: maybe this helps with sorting? (sleep 2 doesn't seem to do much)
+	my $dir = File::DirList::list('.', 'MSN', 1, 1, 0);  # sort doesn't really seem to work
+	my $newestfile;
+	for (my $i = 0; $i < @$dir; $i++) {
+		$newestfile = $dir->[$i]->[13];
+		last if $newestfile =~ m/^segment.*\.ts$/;
+	}
+	if (0 && $newestfile && move $newestfile, "z-$newestfile") {  # automatic deletion disabled cause it doesn't really work yet - trouble with the file creation/modification dates...
+		print "\n\nremoved newest segment\nuser cancelled\n\n";
+	}
+	else {
+		die "\nfailed to remove newest segment!\n\nuser cancelled";
+	}
+	chdir $thisdir;
+	exit 2;
+}
+
+# TODO: Instead of just dumbly getting each segment individually, we'd ideally want to see which segments are already there and retrieve the largest contiguous *block* of segments that hasn't been loaded. Repeat until all segments are loaded. The downside is that the segments may no longer be loaded strictly sequentially, so defective downloads need to be detected and dealt with automatically. (A good start would be to simply delete whichever segment is the newest, because if the user cancelled, this will be a defective one. Occasionally a healthy segment may be deleted, but that's not a big problem. Rename the segment to "z-*" even avoids that minor issue.)
+# Until that is implemented, a quick fix is to try *once* to download all segments with *one* cURL call *iff* *no* segments exist locally yet. Since the download works pretty well these days, that ought to cover the majority of cases. all_segments is then only used as a fallback and to stitch everything together.
+
+my $dir_before = File::DirList::list('.', 'MSN', 1, 1, 0);
+my @existing_segments = grep {$_->[13] =~ m/^segment.*\.ts$/} @$dir_before;
+if (! @existing_segments) {
+	my $result = system "curl", "-O", "${base}segment[1-$count]_${type}.ts";
+	if ($result == 2) {
+		handle_user_cancelled;
+	}
+}
+
+
+
+
 my $result = system scriptname::mydir() . "/all_segments.sh", $base, $count, $type;
 my $status = $?;
 
 my $exitcode = ($result == 0 && $status == 0) ? 0 : ($result == 2 && $status == 2) ? 2 : 1;
 if ($exitcode == 2) {
-	# user cancelled
-	sleep 2;  # test: does this help?
-	my $dir = File::DirList::list('.', 'CSN', 1, 1, 0);  # sort doesn't really seem to work
-	my $newestfile = $dir->[0]->[13];
-	if ($newestfile) {
-		move $newestfile, "z-$newestfile";
-#		print Data::Dumper::Dumper($dir->[0], $dir->[1]);
-	}
-	else {
-		die "\nfailed to remove newest segment!\n\nuser cancelled";
-	}
+	handle_user_cancelled;
 }
 elsif ($exitcode == 1) {
 	$result == 0 or print "all_segments call failed: $? $!\n";
