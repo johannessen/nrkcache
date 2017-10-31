@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.09;
+our $VERSION = 1.10;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
 # TODO: There should be an -n flag to control the niceness on cURL (e.g. --limit-rate 800k; with -nn yielding 400k, which may approximately be real-time q4; -nnn 200k/s)
@@ -230,6 +230,8 @@ if ($nrkurl) {
 	}
 	close NRKPAGE;
 	
+	# TODO: use JSON::XS or something
+	
 	$programid = $nrkinfo->{programid};
 #	say "--- $programid";
 	if ($nrkinfo->{mediaelementApiTemplate} && ( ! $nrkinfo->{playerdata_hls_media} || ! $nrkinfo->{playerdata_subtitlesurl} )) {
@@ -260,9 +262,10 @@ if ($nrkurl) {
 			if ( ! $nrkinfo->{playerdata_subtitlesurl} && m|"subtitlesUrlPath"\s*:\s*"(http[^"]+)"|i ) {
 				$nrkinfo->{playerdata_subtitlesurl} = "$1";
 			}
-			if ( ! $nrkinfo->{'og:description'} && m|"description"\s*:\s*"([^"]+)"|i ) {
+			if ( m|"description"\s*:\s*"(.+?)"\s*,\s*"|i ) {
 				$nrkinfo->{'og:description'} = "$1";
-				$nrkinfo->{'og:description'} =~ s/\\r\\n|\\r|\\n/\n/;
+				$nrkinfo->{'og:description'} =~ s/\\r\\n|\\r|\\n/\n/g;
+				$nrkinfo->{'og:description'} =~ s/\\"/"/g;
 			}
 		}
 		close NRKMEDIA;
