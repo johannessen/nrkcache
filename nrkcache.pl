@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.10;
+our $VERSION = 1.11;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
 # TODO: There should be an -n flag to control the niceness on cURL (e.g. --limit-rate 800k; with -nn yielding 400k, which may approximately be real-time q4; -nnn 200k/s)
@@ -157,6 +157,9 @@ if ($nrkurl) {
 	}
 	system "curl", @hls_cookie_params, "-o", $pagefile, "$nrkurl" unless -f $pagefile;
 	
+	if ( $nrkurl =~ m{/([A-Z]{4}[0-9]{8})/}i ) {
+		$nrkinfo->{programid} = $1;
+	}
 	my $Seriebeskrivelse = 0;
 	my $nrkinfo_ignore = {
 		'apple-mobile-web-app-title' => 1,
@@ -183,7 +186,10 @@ if ($nrkurl) {
 		if ( m{<meta\s+(?:name|property)="([^"]+)"\s+content="([^"]+)"}i ) {
 			$nrkinfo->{$1} = $2 unless $nrkinfo_ignore->{$1};
 		}
-		if ( m{^\s*programId: "([^"]+)",?$}i ) {
+		if ( m{^\s*programId: "([^"]+)",?}i ) {
+			$nrkinfo->{programid} = $1;
+		}
+		if ( m{\WinitState\W.*"id":"([^"]+)"}i ) {
 			$nrkinfo->{programid} = $1;
 		}
 		
