@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.11;
+our $VERSION = 1.12;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
 # TODO: There should be an -n flag to control the niceness on cURL (e.g. --limit-rate 800k; with -nn yielding 400k, which may approximately be real-time q4; -nnn 200k/s)
@@ -232,6 +232,9 @@ if ($nrkurl) {
 		if ( m|\smediaelementApiTemplate\s*:\s*"([^"]+)"\s*,|i ) {
 			$nrkinfo->{mediaelementApiTemplate} = $1;
 		}
+		if ( m|\sapiBaseUrl\s*:\s*'([^']+)'\s*,|i ) {
+			$nrkinfo->{apiBaseUrl} = $1;
+		}
 		
 	}
 	close NRKPAGE;
@@ -240,8 +243,13 @@ if ($nrkurl) {
 	
 	$programid = $nrkinfo->{programid};
 #	say "--- $programid";
-	if ($nrkinfo->{mediaelementApiTemplate} && ( ! $nrkinfo->{playerdata_hls_media} || ! $nrkinfo->{playerdata_subtitlesurl} )) {
+	if ($programid && ( ! $nrkinfo->{playerdata_hls_media} || ! $nrkinfo->{playerdata_subtitlesurl} )) {
 		my $mediaelementApiTemplate = $nrkinfo->{mediaelementApiTemplate};
+		if (! $mediaelementApiTemplate) {
+			my $apiBaseUrl = $nrkinfo->{apiBaseUrl} // "https://psapi-we.nrk.no/" // "https://psapi-ne.nrk.no/";
+			# The API is documented at https://psapi.nrk.no/ (old version: v7.psapi.nrk.no)
+			$mediaelementApiTemplate = "${apiBaseUrl}mediaelement/{id}";
+		}
 		$mediaelementApiTemplate =~ s/{id}/$nrkinfo->{programid}/;
 		my $mediaelementfile = "$nrkinfo->{programid}.json";
 		system "curl", @hls_cookie_params, "-o", $mediaelementfile, "$mediaelementApiTemplate";
