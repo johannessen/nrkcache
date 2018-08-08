@@ -291,7 +291,7 @@ if ($nrkurl) {
 	my ($key, $value);
 	open(my $FH, '>', 'report.txt') or die "Could not open file 'report.txt' $!";
 	if ($nrkinfo->{'og:description'}) {
-		print $FH $nrkinfo->{'og:description'}, "\n\n";
+		print $FH $nrkinfo->{'og:description'}, " ($programid)", "\n\n";
 	}
 	print $FH $nrkinfo->{'nrkurl'}, "\n\n";
 	if ($nrkinfo->{has_review}) {
@@ -304,8 +304,12 @@ if ($nrkurl) {
 	else {
 		print STDERR "Review not available.\n" if $options{verbose};
 	}
-	while (($key, $value) = each %$nrkinfo) {
-		print $FH "$key=$value\n";
+	my $program_title = $nrkinfo->{'title'} || $nrkinfo->{'html_title'} || $nrkinfo->{'og:title'};
+	if ($program_title) {
+		print $FH $program_title, "\n\n";
+	}
+	for my $key (sort keys %$nrkinfo) {
+		print $FH "$key=$nrkinfo->{$key}\n";
 	}
 	close $FH;
 	
