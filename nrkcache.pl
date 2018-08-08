@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.12;
+our $VERSION = 1.13;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
 # TODO: There should be an -n flag to control the niceness on cURL (e.g. --limit-rate 800k; with -nn yielding 400k, which may approximately be real-time q4; -nnn 200k/s)
@@ -155,9 +155,9 @@ if ($nrkurl) {
 	if ( $nrkurl =~ m|/([A-Z]{4}[0-9]{8})/|i ) {
 		$pagefile = "$1.html";
 	}
-	system "curl", @hls_cookie_params, "-o", $pagefile, "$nrkurl" unless -f $pagefile;
+	system "curl", @hls_cookie_params, "-L", "-o", $pagefile, "$nrkurl" unless -f $pagefile;
 	
-	if ( $nrkurl =~ m{/([A-Z]{4}[0-9]{8})/}i ) {
+	if ( $nrkurl =~ m{/([A-Z]{4}[0-9]{8})/?}i ) {
 		$nrkinfo->{programid} = $1;
 	}
 	my $Seriebeskrivelse = 0;
@@ -190,6 +190,9 @@ if ($nrkurl) {
 			$nrkinfo->{programid} = $1;
 		}
 		if ( m{\WinitState\W.*"id":"([^"]+)"}i ) {
+			$nrkinfo->{programid} = $1;
+		}
+		if ( m{\bapplication/ld\+json\b.*"\@id":"([^"]+)"}i ) {
 			$nrkinfo->{programid} = $1;
 		}
 		
@@ -242,7 +245,6 @@ if ($nrkurl) {
 	# TODO: use JSON::XS or something
 	
 	$programid = $nrkinfo->{programid};
-#	say "--- $programid";
 	if ($programid && ( ! $nrkinfo->{playerdata_hls_media} || ! $nrkinfo->{playerdata_subtitlesurl} )) {
 		my $mediaelementApiTemplate = $nrkinfo->{mediaelementApiTemplate};
 		if (! $mediaelementApiTemplate) {
@@ -284,15 +286,14 @@ if ($nrkurl) {
 		}
 		close NRKMEDIA;
 	}
+	$nrkinfo->{'nrkurl'} = $nrkinfo->{'og:url'} || $nrkurl;
 	
 	my ($key, $value);
 	open(my $FH, '>', 'report.txt') or die "Could not open file 'report.txt' $!";
 	if ($nrkinfo->{'og:description'}) {
 		print $FH $nrkinfo->{'og:description'}, "\n\n";
 	}
-	if ($nrkinfo->{'og:url'} && ( ! $nrkinfo->{'og:url'} || $nrkinfo->{'og:url'} eq $nrkinfo->{'og:url'} )) {
-		print $FH $nrkinfo->{'og:url'}, "\n\n";
-	}
+	print $FH $nrkinfo->{'nrkurl'}, "\n\n";
 	if ($nrkinfo->{has_review}) {
 		print STDERR "Downloading Review...\n" if $options{verbose};
 		my $reviewurl = "https://tv.nrk.no/programreview/" . $nrkinfo->{programid};
@@ -310,7 +311,7 @@ if ($nrkurl) {
 	
 }
 
-if ($nrkinfo->{programid} && $nrkinfo->{'og:url'}) {
+if ($nrkinfo->{programid} && $nrkinfo->{'nrkurl'}) {
 	open(my $FH, '>', "$nrkinfo->{programid}.webloc") or die "Could not open file '$nrkinfo->{programid}.webloc' $!";
 	print $FH <<"END";
 <?xml version="1.0" encoding="UTF-8"?>
@@ -318,7 +319,7 @@ if ($nrkinfo->{programid} && $nrkinfo->{'og:url'}) {
 <plist version="1.0">
 <dict>
 	<key>URL</key>
-	<string>$nrkinfo->{'og:url'}</string>
+	<string>$nrkinfo->{'nrkurl'}</string>
 </dict>
 </plist>
 END
