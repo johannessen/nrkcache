@@ -32,6 +32,7 @@ my %options = (
 	index_base => undef,
 	dir => 0,
 	comment => undef,  # ignored!
+	http_header => undef,
 );
 GetOptions(
 	'verbose|v+' => \$verbose,
@@ -44,6 +45,7 @@ GetOptions(
 	'base|b=s' => \$options{index_base},
 	'mkdir|d' => \$options{dir},
 	'comment|c=s' => \$options{comment},
+	'http-header|H=s' => \$options{http_header},
 ) or pod2usage(2);
 pod2usage(-exitstatus => 0, -verbose => 2) if $options{man};
 
@@ -130,6 +132,9 @@ print STDERR "Download URL: $nrkurl\n" if $nrkurl && $options{verbose};
 my @hls_cookie_params = ("-b", "NRK_PLAYER_SETTINGS_RADIO=preferred-player-odm=hlslink,NRK_PLAYER_SETTINGS_TV=preferred-player-odm=hlslink");
 @hls_cookie_params = ("-b", "NRK_PLAYER_SETTINGS_TV=preferred-player-odm=hlslink") unless $options{any};  # not sure why this is necessary; check curl docs
 
+my @http_header = ();
+@http_header = ("-H", $options{http_header}) if $options{http_header};
+
 my $base = $options{index_base};
 my $count = '';
 my $type;
@@ -155,7 +160,7 @@ if ($nrkurl) {
 	if ( $nrkurl =~ m|/([A-Z]{4}[0-9]{8})/|i ) {
 		$pagefile = "$1.html";
 	}
-	system "curl", @hls_cookie_params, "-L", "-o", $pagefile, "$nrkurl" unless -f $pagefile;
+	system "curl", @hls_cookie_params, @http_header, "-L", "-o", $pagefile, "$nrkurl" unless -f $pagefile;
 	
 	if ( $nrkurl =~ m{/([A-Z]{4}[0-9]{8})/?}i ) {
 		$nrkinfo->{programid} = $1;
@@ -254,7 +259,7 @@ if ($nrkurl) {
 		}
 		$mediaelementApiTemplate =~ s/{id}/$nrkinfo->{programid}/;
 		my $mediaelementfile = "$nrkinfo->{programid}.json";
-		system "curl", @hls_cookie_params, "-o", $mediaelementfile, "$mediaelementApiTemplate";
+		system "curl", @hls_cookie_params, @http_header, "-o", $mediaelementfile, "$mediaelementApiTemplate";
 		local *NRKMEDIA;
 		open NRKMEDIA, '<', $mediaelementfile or die $!;
 		while (<NRKMEDIA>) {
@@ -334,7 +339,7 @@ if ( $options{any} && $nrkinfo->{playlisturl} ) {
 	print STDERR "Downloading Playlist...\n" if $options{verbose};
 	my $playlisturl = "https://radio.nrk.no/" . $nrkinfo->{playlisturl};
 	print STDERR "$playlisturl\n" if $options{verbose};
-	system "curl", "-o", 'playlist.html', $playlisturl;
+	system "curl", @http_header, "-o", 'playlist.html', $playlisturl;
 }
 elsif ( $options{any} ) {
 	print STDERR "Playlist not available.\n" if $options{verbose};
@@ -358,7 +363,7 @@ if ( $options{infoonly} ) {
 
 if ($nrkinfo->{playerdata_hls_media}) {
 	print STDERR "Downloading Master File...\n" if $options{verbose};
-	system "curl", "-o", $MASTER_NAME, $nrkinfo->{playerdata_hls_media};
+	system "curl", @http_header, "-o", $MASTER_NAME, $nrkinfo->{playerdata_hls_media};
 }
 else {
 	print STDERR "Master File URL not found on NRK page.\n" if $options{verbose};
@@ -419,7 +424,7 @@ print STDERR "Base: $base (suffix: $suffix, query: $query)\n";
 
 
 
-system "curl", "-o", $indexfile, "$base$indexfile$query" unless -r $indexfile;
+system "curl", @http_header, "-o", $indexfile, "$base$indexfile$query" unless -r $indexfile;
 
 
 
@@ -479,7 +484,7 @@ sub handle_user_cancelled {
 my $dir_before = File::DirList::list('.', 'MSN', 1, 1, 0);
 my @existing_segments = grep {$_->[13] =~ m/^segment.*\.ts$/} @$dir_before;
 if (! @existing_segments) {
-	my $result = system "curl", "-O", "${base}segment[1-$count]_${type}.ts";
+	my $result = system "curl", @http_header, "-O", "${base}segment[1-$count]_${type}.ts";
 	if ($result == 2) {
 		handle_user_cancelled;
 	}
@@ -552,6 +557,11 @@ nrkcache.pl - Cache NRK Video on Demand broadcasts for offline viewing.
 =item B<--help, -?>
 
 Display a help message and exit.
+
+=item B<--http-header, -H>
+
+Add a custom HTTP header to most requests. The format is "Field: value".
+Can only be used once.
 
 =item B<--info-only, -I>
 
