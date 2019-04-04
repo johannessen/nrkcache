@@ -8,6 +8,7 @@ our $VERSION = 1.13;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
 # TODO: There should be an -n flag to control the niceness on cURL (e.g. --limit-rate 800k; with -nn yielding 400k, which may approximately be real-time q4; -nnn 200k/s)
+# TODO: Sourcing the program ID from the provided URL (if possible) is probably the most reliable option. Parsing it from NRK's changing HTML file is rather brittle and should not be attempted unless really necessary.
 
 use scriptname;
 use File::DirList;
@@ -197,7 +198,7 @@ if ($nrkurl) {
 		if ( m{\WinitState\W.*"id":"([^"]+)"}i ) {
 			$nrkinfo->{programid} = $1;
 		}
-		if ( m{\bapplication/ld\+json\b.*"\@id":"([^"]+)"}i ) {
+		if ( ! $nrkinfo->{programid} && m{\bapplication/ld\+json\b.*"\@id":"(?:[^"]*\u002[Ff]|[^"]*/)?([^"]+)"}i ) {
 			$nrkinfo->{programid} = $1;
 		}
 		
@@ -250,6 +251,7 @@ if ($nrkurl) {
 	# TODO: use JSON::XS or something
 	
 	$programid = $nrkinfo->{programid};
+	print STDERR "Program ID: ", ("$programid\n" || "not found!\n") if $options{verbose};
 	if ($programid && ( ! $nrkinfo->{playerdata_hls_media} || ! $nrkinfo->{playerdata_subtitlesurl} )) {
 		my $mediaelementApiTemplate = $nrkinfo->{mediaelementApiTemplate};
 		if (! $mediaelementApiTemplate) {
