@@ -4,10 +4,9 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.17;
+our $VERSION = 1.18;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
-# TODO: There should be an -n flag to control the niceness on cURL (e.g. --limit-rate 800k; with -nn yielding 400k, which may approximately be real-time q4; -nnn 200k/s)
 # TODO: Sourcing the program ID from the provided URL (if possible) is probably the most reliable option. Parsing it from NRK's changing HTML file is rather brittle and should not be attempted unless really necessary.
 
 use scriptname;
@@ -27,6 +26,7 @@ my %options = (
 	master_name => 'master.m3u8',
 	quality => -1,
 	verbose => 1,
+	nice => 0,
 	any => undef,
 	part => undef,
 	index_base => undef,
@@ -38,6 +38,7 @@ GetOptions(
 	'verbose|v+' => \$options{verbose},
 	'man' => \$options{man},
 	'masterfile-name=s' => \$options{master_name},
+	'nice|n+' => \$options{nice},
 	'quality|q=i' => \$options{quality},
 	'any|a' => \$options{any},
 	'part|p=i' => \$options{part},
@@ -457,6 +458,18 @@ if ( ! $base || ! $count || ! $type ) {
 print STDERR "Segments detected:  $count\n";
 print STDERR "Type: $type, Base: $base\n";
 
+my @limit_rate = ();
+if ($options{nice}) {
+	my $nice_rate = 800;  # kilo‐bytes per second
+	$nice_rate = int $nice_rate / 2 ** ($options{nice} - 1);
+	@limit_rate = ("--limit-rate", $nice_rate . "k");
+	print STDERR "Will try to limit bandwidth to $nice_rate KiB/s for media transport.\n" if $options{verbose};
+	# "Try to" because the limit will not be passed along to all_segments.sh
+}
+else {
+	print STDERR "Will not try to limit bandwidth usage.\n" if $options{verbose} >= 2;
+}
+
 
 
 
@@ -485,7 +498,7 @@ sub handle_user_cancelled {
 my $dir_before = File::DirList::list('.', 'MSN', 1, 1, 0);
 my @existing_segments = grep {$_->[13] =~ m/^segment.*\.ts$/} @$dir_before;
 if (! @existing_segments) {
-	my $result = system "curl", @http_header, "-O", "${base}segment[1-$count]_${type}.ts";
+	my $result = system "curl", @http_header, @limit_rate, "-O", "${base}segment[1-$count]_${type}.ts";
 	if ($result == 2) {
 		handle_user_cancelled;
 	}
@@ -575,6 +588,17 @@ Print the manual page and exit.
 =item B<--masterfile-name>
 
 .
+
+=item B<--nice, -n>
+
+Try to reduce the bandwidth used by the program. Giving this option
+multiple times may reduce the bandwidth more and more.
+
+Reducing the bandwidth may be useful when the caching is done on a
+good network connection for later viewing, where it prevents the
+overuse of network and server resources. It may also be useful on
+a bad network connection to keep the remaining bandwidth available
+for other purposes.
 
 =item B<--quality, -q>
 
