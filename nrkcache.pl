@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.18;
+our $VERSION = 1.19;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
 # TODO: Sourcing the program ID from the provided URL (if possible) is probably the most reliable option. Parsing it from NRK's changing HTML file is rather brittle and should not be attempted unless really necessary.
@@ -403,6 +403,7 @@ while (<MASTER>) {
 	if ($options{quality} == $type) {
 		last;
 	}
+	last if $options{quality} == -1 && $type == 3;  # max out at q3 by default
 }
 close MASTER;
 
@@ -603,8 +604,14 @@ for other purposes.
 =item B<--quality, -q>
 
 The type of the AV content to download as listed in the master.m3u8 file.
-Usually the AV quality for NRK content ranges from 0 to 4. By default the
-highest numerical value available is chosen.
+Usually the AV quality for NRK content ranges from 0 to 4.
+
+If this option is not given, by default quality 3 is preferred when
+available, otherwise the highest numerical value available is chosen.
+AV content at quality 3 means "540p" or "qHD" resolution, which is
+similar to Standard Definition TV (though typically encoded at higher
+quality than standard TV). It may sound old-fashioned, but for a lot
+of programs, this is actually plenty fine.
 
 =item B<--any, -a>
 
