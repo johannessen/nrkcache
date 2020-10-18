@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.014;
 
-our $VERSION = 1.19;
+our $VERSION = 1.20;
 
 # TODO: Segments that are unavailable in the requested quality should perhaps automatically be re-downloaded in another quality. I guess one of the main problems would be how to report that to the user.
 # TODO: Sourcing the program ID from the provided URL (if possible) is probably the most reliable option. Parsing it from NRK's changing HTML file is rather brittle and should not be attempted unless really necessary.
@@ -193,6 +193,12 @@ if ($nrkurl) {
 			$nrkinfo->{$1} = $2 unless $nrkinfo_ignore->{$1};
 		}
 		if ( m{^\s*programId: "([^"]+)",?}i ) {
+			$nrkinfo->{programid} = $1;
+		}
+		if ( m{"nrk:program-id" content="([^"]+)"}i ) {
+			$nrkinfo->{programid} = $1;
+		}
+		if ( m{\bdata-program-id="([^"]+)"}i ) {
 			$nrkinfo->{programid} = $1;
 		}
 		if ( m{\WinitState\W.*"id":"([^"]+)"}i ) {
