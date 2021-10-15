@@ -4,8 +4,8 @@ About nrkcache
 The [sizeable](https://nrkbeta.no/2015/03/02/50-000-tv-program-nar-du-vil/)
 Video-on-Demand offerings of the [Norwegian Broadcasting Corporation](https://www.nrk.no/)
 can be difficult to watch over a slow or unstable network connection. Programs
-recorded at 720p quality often have average data rates in excess of
-2500 kbit/s (300 KiB/s), which even today is often unavailable in rural areas
+recorded at 1080p quality often have average data rates in excess of
+4500 kbit/s (550 KiB/s), which even today is sometimes unavailable in rural areas
 underserved by commercial telcos. Additionally, some network connections,
 particularly those that rely on certain wireless technology or ancient copper
 wiring, are so unstable that local caching is the only way to watch a video
@@ -21,20 +21,17 @@ offering and will not work with other HLS sources without modification.
 System Requirements
 -------------------
 
-- Perl 5.14+; modules not in 5.26 core:
-  - File::DirList
-  - HTML::Entities
-  - scriptname
-- Bash
-- cURL
-- libxslt (`xsltproc`)
-- FFmpeg
+- Perl 5.26+; modules not in core:
+  - Object::Pad
+  - Path::Tiny
+- [youtube-dl](https://yt-dl.org/)
+- [FFmpeg](https://ffmpeg.org/)
 
 
 Contributing
 ------------
 
-The script works, but could probably use a lot of polishing. All contributions
+All contributions
 are welcome. Simply create a new issue or a pull request.
 
 
@@ -69,10 +66,14 @@ The following alternatives to **nrkcache** (this script) are known.
   file, but does not seem to offer meta data retrieval.
 
 - [**youtube-dl**](https://github.com/ytdl-org/youtube-dl) is being
-  maintained very well, but does not seem to support the subtitle format
-  offered by NRK. It has a more stream-lined user experience than
-  **nrkcache,** but also offers a great deal of options which may make
+  maintained very well and is the backend used by **nrkcache** since
+  version 2. It offers a great deal of configurability, which may make
   its use more complicated in certain cases.
 
 - [**svtplay-dl**](https://github.com/spaam/svtplay-dl) purports
   supporting NRK as well.
+
+- **nrkcache** [version 1](https://github.com/johannessen/nrkcache/tree/all_segments)
+  is no longer working properly after changes to NRK's HTML pages.
+  However, its component scripts may be useful individually in some
+  rare cases.
