@@ -18,6 +18,18 @@ modern video players. It is specially designed for the NRK Video-on-Demand
 offering and will not work with other HLS sources without modification.
 
 
+all_segments.sh
+---------------
+
+This branch represents version 1 of the **nrkcache** script, which was
+originally just a front-end for the small shell scripts `all_segments.sh`
+and `btitles.sh`. Version 1 is not well adapted to the current NRK API
+and never had a good design in the first place. While these scripts may
+continue to be useful in some cases, it’s recommended to use the [most
+recent version of **nrkcache**](https://github.com/johannessen/nrkcache)
+instead.
+
+
 System Requirements
 -------------------
 
@@ -29,13 +41,6 @@ System Requirements
 - cURL
 - libxslt (`xsltproc`)
 - FFmpeg
-
-
-Contributing
-------------
-
-The script works, but could probably use a lot of polishing. All contributions
-are welcome. Simply create a new issue or a pull request.
 
 
 Legal Considerations
@@ -61,7 +66,13 @@ This script is in the Public Domain.
 Alternatives
 ------------
 
-The following alternatives to **nrkcache** (this script) are known.
+The following alternatives to **nrkcache** (version 1) are known.
+
+- [**nrkcache**](https://github.com/johannessen/nrkcache) (current
+  version) can merge multi-part programs, subtitles, and metadata
+  into a single MP4 file automatically. However, it requires a more
+  recent version of Perl and removes `all_segments.sh` and associated
+  tools. It uses youtube-dl rather than cURL for networking.
 
 - [**nrk-download**](https://github.com/marhoy/nrk-download) is another
   solution specific to NRK that supports downloading entire series of
