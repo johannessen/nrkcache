@@ -21,7 +21,10 @@ offering and will not work with other HLS sources without modification.
 System Requirements
 -------------------
 
-- Perl 5.14+
+- Perl 5.14+; modules not in 5.26 core:
+  - File::DirList
+  - HTML::Entities
+  - scriptname
 - Bash
 - cURL
 - libxslt (`xsltproc`)
