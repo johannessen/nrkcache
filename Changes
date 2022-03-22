@@ -1,5 +1,9 @@
 Revision history for nrkcache.pl
 
+2.01  2022-03-22
+
+ - Quick workaround for the mediaelement API, which is gone now
+
 2.00  2021-10-15
 
  - Complete rewrite using Object::Pad and youtube-dl

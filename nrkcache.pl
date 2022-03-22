@@ -7,7 +7,7 @@ use open qw( :utf8 :std );
 
 package Local::NRK::Cache;
 # ABSTRACT: Cache NRK Video on Demand broadcasts for offline viewing
-our $VERSION = '2.00';
+our $VERSION = '2.01';
 
 use Object::Pad 0.51;
 use Getopt::Long 2.33 qw( :config posix_default gnu_getopt auto_version auto_help );
@@ -51,9 +51,9 @@ class Local::NRK::Cache :strict(params) {
 		delete $params->{quality};
 		
 		$program_id = $self->_discover_program_id;
-		my $meta = $self->_get_mediaelement;
+		my $meta = {};
 		#$meta = $self->_get_manifest($meta);
-		#$meta = $self->_get_metadata($meta);
+		$meta = $self->_get_metadata($meta);
 		
 		$meta->{title} =~ s/$/-$program_id/ unless $meta->{title} =~ m/$program_id$/;
 		$meta_title //= $meta->{title};
@@ -114,6 +114,7 @@ class Local::NRK::Cache :strict(params) {
 	}
 	
 	
+	# dead code, mediaelement is 410
 	method _get_mediaelement {
 		my $json = $self->_get_json("/mediaelement/{id}");
 		my $title = $json->{scoresStatistics}{springStreamStream} // '';
@@ -133,6 +134,13 @@ class Local::NRK::Cache :strict(params) {
 	
 	method _get_metadata ($meta) {
 		my $json = $self->_get_json("/playback/metadata/program/{id}");
+		$meta->{title} = $json->{preplay}{titles}{title} // '';
+		if (my $subtitle = $json->{preplay}{titles}{subtitle}) {
+			$meta->{title} .= " $subtitle" if length $subtitle < 30;
+			# The "subtitle" sometimes contains the full-length description,
+			# which we don't want in the file name.
+		}
+		$meta->{description} = $json->{preplay}{description} // '';
 		$meta
 	}
 	
