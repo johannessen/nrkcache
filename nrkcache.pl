@@ -31,7 +31,7 @@ our @FORMATS = qw(
 	worst[ext=mp4][height>960]/best[ext=mp4]
 	best[ext=mp4]
 );
-our $NICE_RATE = 2400;  # kilo-bytes per second
+our $RATE = 1600;  # kilo-bytes per second
 
 
 class Local::NRK::Cache :strict(params) {
@@ -159,7 +159,7 @@ class Local::NRK::Cache :strict(params) {
 		my @ytdl_args = qw( --write-sub --all-subs --abort-on-unavailable-fragment );
 		push @ytdl_args, '--output', $dir_mp4;
 		push @ytdl_args, '--format', $FORMATS[$quality < @FORMATS ? $quality : $#FORMATS];
-		push @ytdl_args, '--limit-rate', (int $NICE_RATE / 2 ** ($nice - 1)) . 'k' if $nice;
+		push @ytdl_args, '--limit-rate', (int $RATE / 2 ** ($nice - 1)) . 'k' if $nice;
 		system 'youtube-dl', $url, @ytdl_args;
 		$self->_ipc_error_check($!, $?, 'youtube-dl');
 		

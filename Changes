@@ -1,5 +1,9 @@
 Revision history for nrkcache.pl
 
+2.02  2022-12-10
+
+ - Change default rate limit to 1600 KiB/s
+
 2.01  2022-03-22
 
  - Quick workaround for the mediaelement API, which is gone now
