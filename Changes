@@ -2,6 +2,8 @@ Revision history for nrkcache.pl
 
 2.02  2022-12-10
 
+ - Add experimental Mac-only --coreaudio option to recode the audio track
+   using Apple Core Audio, which can avoid audible artifacts in some cases
  - Change default rate limit to 1600 KiB/s
  - Fix spurious undefined warning for non-NRK URLs
 

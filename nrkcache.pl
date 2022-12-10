@@ -7,7 +7,7 @@ use open qw( :utf8 :std );
 
 package Local::NRK::Cache;
 # ABSTRACT: Cache NRK Video on Demand broadcasts for offline viewing
-our $VERSION = '2.01';
+our $VERSION = '2.02';
 
 use Object::Pad 0.51;
 use Getopt::Long 2.33 qw( :config posix_default gnu_getopt auto_version auto_help );
@@ -163,26 +163,32 @@ class Local::NRK::Cache :strict(params) {
 		system 'youtube-dl', $url, @ytdl_args;
 		$self->_ipc_error_check($!, $?, 'youtube-dl');
 		
+		my @codecs = (
+			'-c:v' => $options{vcodec} ? split ' ', $options{vcodec} : 'copy',
+			'-c:a' => $options{acodec} ? split ' ', $options{acodec} : 'copy',
+		);
+		croak "acodec/vcodec must have uneven number of items" if @codecs & 1;  # won't catch the mess if both are wrong
 		my $dir_sub = $dir_sub_nb_ttv->exists ? $dir_sub_nb_ttv :
 			$dir_sub_nn_ttv->exists ? $dir_sub_nn_ttv :
 			$dir_sub_nb_nor->exists ? $dir_sub_nb_nor :
 			$dir_sub_nn_nor->exists ? $dir_sub_nn_nor :
 			undef;
 		if ($dir_sub) {
-			system 'ffmpeg',
-				-i => $dir_mp4,
+			@codecs = (
 				-f => 'srt', -i => $dir_sub,
-				qw( -map 0:0 -map 0:1 -map 1:0 -c:v copy -c:a copy -c:s mov_text ),
-				-metadata => "description=$meta_desc",
-				-metadata => "comment=$url",
-				-metadata => "copyright=NRK",
-				-metadata => "episode_id=$program_id",
-				$file;
-			$self->_ipc_error_check($!, $?, 'ffmpeg');
+				qw( -map 0:0 -map 0:1 -map 1:0 ), @codecs, qw( -c:s mov_text ),
+			);
+			# https://trac.ffmpeg.org/wiki/Map
 		}
-		else {
-			$dir_mp4->move($file);
-		}
+		system 'ffmpeg',
+			-i => $dir_mp4,
+			@codecs,
+			-metadata => "description=$meta_desc",
+			-metadata => "comment=$url",
+			-metadata => "copyright=NRK",
+			-metadata => "episode_id=$program_id",
+			$file;
+		$self->_ipc_error_check($!, $?, 'ffmpeg');
 		$dir->remove_tree;
 	}
 	
@@ -208,6 +214,7 @@ my %options = (
 );
 GetOptions(
 	'comment|c=s' => \$options{comment},
+	'coreaudio' => \$options{coreaudio},
 	'man' => \$options{man},
 	'nice|n+' => \$options{nice},
 	'not-nice' => \$options{not_nice},
@@ -222,7 +229,9 @@ my $cache = Local::NRK::Cache->new(
 	url => $ARGV[0],
 	nice => $options{not_nice} ? 0 : $options{nice},
 	quality => $options{quality},
-)->store;
+)->store(
+	$options{coreaudio} ? (acodec => 'aac_at -b:a 160k') : (),
+);
 
 
 __END__
@@ -254,6 +263,12 @@ NRK. The data is muxed into a single MP4 file using FFmpeg.
 =head1 OPTIONS
 
 =over
+
+=item B<--coreaudio>
+
+Recode the audio track using Apple Core Audio (c<aac_at>). Useful
+to avoid audible artifacts during playback on certain Apple devices,
+such as ancient iPads. Only supported on the Mac. Experimental.
 
 =item B<--help, -?>
 
