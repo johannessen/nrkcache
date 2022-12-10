@@ -3,6 +3,7 @@ Revision history for nrkcache.pl
 2.02  2022-12-10
 
  - Change default rate limit to 1600 KiB/s
+ - Fix spurious undefined warning for non-NRK URLs
 
 2.01  2022-03-22
 

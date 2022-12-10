@@ -91,7 +91,7 @@ class Local::NRK::Cache :strict(params) {
 		croak "HTTP error $res->{status} $res->{reason} on $url$error" unless $res->{success};
 		my $html = $res->{content};
 		my ($base_url) = $html =~ m/\bdata-psapi-base-url="([^"]+)"/i;
-		$psapi_base = $base_url if $base_url =~ m/https:$nrk_re/i;
+		$psapi_base = $base_url if $base_url && $base_url =~ m/https:$nrk_re/i;
 		$id = $res->{headers}{'x-nrk-program-id'} // '';  # this header might not have been present in the HEAD response
 		return $id if $id =~ m/^$prfid_re$/;
 		return $id if ($id) = $html =~ m/\bprogram-id(?:"\s+content)?="($prfid_re)"/i;
