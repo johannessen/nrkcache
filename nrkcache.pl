@@ -7,7 +7,7 @@ use open qw( :utf8 :std );
 
 package Local::NRK::Cache;
 # ABSTRACT: Cache NRK Video on Demand broadcasts for offline viewing
-our $VERSION = '2.02';
+our $VERSION = '2.03';
 
 use Object::Pad 0.51;
 use Getopt::Long 2.33 qw( :config posix_default gnu_getopt auto_version auto_help );
@@ -98,7 +98,7 @@ class Local::NRK::Cache :strict(params) {
 		return $id if ($id) = $html =~ m/"prf(?:Id"\s*:\s*"|:)($prfid_re)"/;
 		warn "Warning: Failed to discover NRK 'PRF' program ID; trying harder";
 		return $id if ($id) = $html =~ m/\b($prfid_re)\b/;
-		return $id if ($id) = $html =~ m/(\\u002[Ff]|\%2[Ff])($prfid_re)\b/;
+		return $id if ($id) = $html =~ m/(?:\\u002[Ff]|\%2[Ff])($prfid_re)\b/;
 		return $id if ($id) = $html =~ m/(?:[0-9a-z_]|\\u[0-9A-F]{4}|\%[0-9A-F]{2})($prfid_re)\b/;  # last-ditch effort
 		croak "Failed to discover NRK 'PRF' program ID; giving up on '$url'";
 	}

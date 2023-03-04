@@ -1,5 +1,9 @@
 Revision history for nrkcache.pl
 
+2.03  2023-03-04
+
+ - Fix bug in future-proofing of program ID detection (not relevant today)
+
 2.02  2022-12-10
 
  - Add experimental Mac-only --coreaudio option to recode the audio track
