@@ -1,0 +1,8 @@
+/.build/
+/cover_db/
+/Video-NRK-Cache-*
+/Stuff/
+*~
+
+*.mp4
+*.m4a

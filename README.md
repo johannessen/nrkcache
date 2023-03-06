@@ -21,11 +21,30 @@ offering and will not work with other HLS sources without modification.
 System Requirements
 -------------------
 
-- Perl 5.26+; modules not in core:
-  - Object::Pad
-  - Path::Tiny
-- [youtube-dl](https://yt-dl.org/)
+- [Perl](https://www.perl.org/) 5.37.9+
 - [FFmpeg](https://ffmpeg.org/)
+- [YT-dlp](https://github.com/yt-dlp/yt-dlp#readme)
+  (some alternatives are supported as well)
+
+
+Installation
+------------
+
+Released versions of [`nrkcache`](https://metacpan.org/release/Video-NRK-Cache)
+may be installed via [CPAN](https://www.cpan.org/modules/INSTALL.html):
+
+	cpanm Video::NRK::Cache
+
+[![CPAN distribution](https://badge.fury.io/pl/Video-NRK-Cache.svg)](https://badge.fury.io/pl/Video-NRK-Cache)
+
+To install a development version from this repository, run the following steps:
+
+```sh
+git clone https://github.com/johannessen/nrkcache
+cd nrkcache
+cpanm Dist::Zilla::PluginBundle::Author::AJNN
+dzil install
+```
 
 
 Contributing
@@ -33,6 +52,12 @@ Contributing
 
 All contributions
 are welcome. Simply create a new issue or a pull request.
+
+This is a “Pure Perl” distribution, which means you don’t need
+[Dist::Zilla][] to contribute patches. You can simply clone
+the repository and run the test suite using `prove` instead.
+
+[Dist::Zilla]: https://metacpan.org/release/Dist-Zilla
 
 
 Legal Considerations
@@ -65,9 +90,9 @@ The following alternatives to **nrkcache** (this script) are known.
   TV shows in one go. It automatically embeds subtitles into the video
   file, but does not seem to offer meta data retrieval.
 
-- [**youtube-dl**](https://github.com/ytdl-org/youtube-dl) is being
+- [**yt-dlp**](https://github.com/yt-dlp/yt-dlp) is being
   maintained very well and is the backend used by **nrkcache** since
-  version 2. It offers a great deal of configurability, which may make
+  version 3. It offers a great deal of configurability, which may make
   its use more complicated in certain cases.
 
 - [**svtplay-dl**](https://github.com/spaam/svtplay-dl) purports

@@ -1,5 +1,13 @@
 Revision history for nrkcache.pl
 
+3.00  2023-03-06
+
+ - Change the default download tool from youtube-dl to yt-dlp.
+ - Refactor class structure to allow for alternative download tools.
+ - Separate packages/classes from the CLI script to make them reusable
+   from other Perl code.
+ - Release as CPAN distribution.
+
 2.03  2023-03-04
 
  - Fix bug in future-proofing of program ID detection (not relevant today)
