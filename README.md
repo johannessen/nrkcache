@@ -46,6 +46,10 @@ cpanm Dist::Zilla::PluginBundle::Author::AJNN
 dzil install
 ```
 
+You can also try to run `nrkcache.pl` directly from the repository
+directory without installing the software, but this method is only
+provided for backwards compatibility and may not work very reliably.
+
 
 Contributing
 ------------
