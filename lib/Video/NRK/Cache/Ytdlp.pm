@@ -22,13 +22,13 @@ method ytdlp_args () { @ytdlp_args }
 
 
 our @FORMATS = qw(
-	worst/worst*
-	worst[height>240]/best/best*
-	worst[height>320]/best/best*
-	worst[height>480]/best/best*
-	worst[height>640]/best/best*
-	worst[height>960]/best/best*
-	best/best*
+	worst/worstvideo+worstaudio/worst*
+	worst[height>240]/worstvideo[height>240]+bestaudio/best/bestvideo+bestaudio/best*
+	worst[height>320]/worstvideo[height>320]+bestaudio/best/bestvideo+bestaudio/best*
+	worst[height>480]/worstvideo[height>480]+bestaudio/best/bestvideo+bestaudio/best*
+	worst[height>640]/worstvideo[height>640]+bestaudio/best/bestvideo+bestaudio/best*
+	worst[height>960]/worstvideo[height>960]+bestaudio/best/bestvideo+bestaudio/best*
+	best/bestvideo+bestaudio/best*
 );
 
 
