@@ -1,4 +1,8 @@
-Revision history for nrkcache.pl
+Revision history for Video::NRK::Cache / nrkcache
+
+3.0050  2023-11-15
+
+ - Fix declared prerequisites.
 
 3.00  2023-03-06
 
