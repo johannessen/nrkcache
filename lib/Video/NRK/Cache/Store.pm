@@ -59,6 +59,7 @@ ADJUST {
 	$dir_sub{nb_nor} = $dir->child("$program_id.nb-nor.vtt");
 	$dir_sub{nn_ttv} = $dir->child("$program_id.nn-ttv.vtt");
 	$dir_sub{nn_nor} = $dir->child("$program_id.nn-nor.vtt");
+	$dir_sub{ffmpeg} = $dir->child("$program_id.ffmpeg.vtt");
 }
 
 
@@ -94,8 +95,15 @@ method ffmpeg () {
 		$dir_sub{nn_nor}->exists ? $dir_sub{nn_nor} :
 		undef;
 	if ($dir_sub) {
+		
+		# As of 2025, many NRK subs lack a space after </i>. It's a problem
+		# with the original data: The NRK web player is affected, too.
+		my $sub = path($dir_sub)->slurp_raw;
+		$sub =~ s{</i>(?=\w)}{</i> }g;
+		path($dir_sub{ffmpeg})->spew_raw($sub);
+		
 		@codecs = (
-			-f => 'srt', -i => "$dir_sub",
+			-f => 'srt', -i => "$dir_sub{ffmpeg}",
 			qw( -map 0:0 -map 0:1 -map 1:0 ), @codecs, qw( -c:s mov_text ),
 		);
 		# https://trac.ffmpeg.org/wiki/Map
@@ -244,7 +252,7 @@ cache store directory as a L<Path::Tiny> object.
 
 Return the (temporary) location of the video subtitle cache files
 inside the cache store directory as a hash of L<Path::Tiny> objects.
-Has entries for the keys C<nb_ttv>, C<nb_nor>, C<nn_ttv>, C<nn_nor>.
+Has entries for the keys C<nb_ttv>, C<nb_nor>, C<nn_ttv>, C<nn_nor>, C<ffmpeg>.
 Each of these files may or may not actually exist, depending on the
 subtitles offered for the particular video.
 

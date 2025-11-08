@@ -1,5 +1,9 @@
 Revision history for Video::NRK::Cache / nrkcache
 
+3.0152  2025-11-08
+
+ - Fix missing spaces after italic words in NRK subtitles.
+
 3.01  2023-11-15
 
  - Fix for NRK changes: They recently started to separate video and audio
