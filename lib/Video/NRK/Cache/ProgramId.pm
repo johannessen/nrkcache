@@ -138,7 +138,7 @@ Calls the C<parse()> method with the value provided. Optional.
 =item psapi_base
 
 The NRK PSAPI base URL to use. If not provided, by default
-C<https://psapi.nrk.no> will be attempted first, before at
+C<https://psapi.nrk.no> will be attempted first, before an
 attempt is undertaken to determine the correct API base from
 NRK's web site. Optional.
 
