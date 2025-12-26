@@ -11,7 +11,7 @@ class Video::NRK::Cache::Store;
 
 use Carp qw( croak );
 use Cwd qw( cwd );
-use Path::Tiny qw( path );
+use Path::Tiny 0.125 qw( path );
 use List::Util qw( max );
 
 
@@ -79,7 +79,7 @@ method rate () {
 
 method prep () {
 	croak "File exists: $file" if $file->exists;
-	$dir->mkpath;
+	$dir->mkdir;
 }
 
 
