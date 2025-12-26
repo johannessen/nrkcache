@@ -17,6 +17,19 @@ segments, then combining them into a single MPEG-4 container supported by many
 modern video players. It is specially designed for the NRK Video-on-Demand
 offering and will not work with other HLS sources without modification.
 
+Each invocation of `nrkcache` will only cache a single program or episode.
+But it's easy to get a Bash shell to loop through multiple episodes like this:
+
+```bash
+for (( e=1 ; e <= 14 ; ++e ))
+do
+  program_id=$( printf 'MUHH5000%02i23' $e )
+  nrkcache "https://tv.nrk.no/serie/nytt-paa-nytt/2023/$program_id"
+  # Or something like "https://tv.nrk.no/serie/foobar/sesong/1/episode/$e"
+  # for simpler URLs that use the season/episode structure.
+done
+```
+
 
 System Requirements
 -------------------

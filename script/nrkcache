@@ -62,6 +62,18 @@ For network transport, this script requires YT-dlp.
 Norwegian subtitles and metadata are retrieved from NRK as well.
 The data is muxed into a single MP4 file, which requires FFmpeg.
 
+Each invocation of this script will only cache a single program
+or episode. To loop through multiple episodes, either use the
+backend class L<Video::NRK::Cache> directly or a shell loop:
+
+ for (( e=1 ; e <= 14 ; ++e ))
+ do
+   program_id=$( printf 'MUHH5000%02i23' $e )
+   nrkcache "https://tv.nrk.no/serie/nytt-paa-nytt/2023/$program_id"
+   # Or something like "https://tv.nrk.no/serie/foobar/sesong/1/episode/$e"
+   # for simpler URLs that use the season/episode structure.
+ done
+
 =head1 OPTIONS
 
 =over
