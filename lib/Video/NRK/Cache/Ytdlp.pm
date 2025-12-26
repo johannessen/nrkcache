@@ -15,6 +15,7 @@ field @ytdlp_args = qw(
 	--write-sub
 	--all-subs
 	--abort-on-unavailable-fragment
+	--compat-options no-direct-merge
 );
 
 # :reader
